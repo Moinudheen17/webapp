@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}New Item{% endblock %}
+{% block content %}
+<h1>Add New Item</h1>
+<form id="item-form" class="auth-form">
+    <label for="name">Name</label>
+    <input type="text" id="name" required>
+
+    <label for="price">Price</label>
+    <input type="number" id="price" step="0.01" min="0" required>
+
+    <label for="description">Description</label>
+    <textarea id="description" rows="4"></textarea>
+
+    <button type="submit">Create Item</button>
+    <p id="form-error" class="error"></p>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Client-side gate: bounce logged-out visitors to /login. This is a UX
+    // convenience only — the real enforcement is get_current_user() on
+    // POST /items/ plus the RLS insert policy.
+    if (!getToken()) {
+        window.location.href = "/login";
+    }
+
+    document.getElementById("item-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const name = document.getElementById("name").value;
+        const price = parseFloat(document.getElementById("price").value);
+        const description = document.getElementById("description").value;
+        const errorEl = document.getElementById("form-error");
+        errorEl.textContent = "";
+
+        try {
+            const res = await fetch("/items/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...authHeaders(),
+                },
+                body: JSON.stringify({ name, price, description }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.detail || "Could not create item";
+                return;
+            }
+            window.location.href = "/product/" + data.id;
+        } catch (err) {
+            errorEl.textContent = "Network error. Please try again.";
+        }
+    });
+</script>
+{% endblock %}

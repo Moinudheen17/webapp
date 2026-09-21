@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<div class="product-detail">
+    <h1>{{ item.name }}</h1>
+    <p class="price">${{ "%.2f"|format(item.price) }}</p>
+    {% if item.description %}
+    <p class="desc">{{ item.description }}</p>
+    {% endif %}
+
+    <button id="delete-btn" class="hidden">Delete Item</button>
+    <p id="delete-error" class="error"></p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // item.id is embedded with the |tojson filter rather than string
+    // interpolation. |tojson both HTML-escapes and produces a valid JS
+    // literal, so this is safe whether the primary key is an integer
+    // (e.g. 42) or a UUID string (e.g. "b3b1...") — no manual quoting or
+    // type-specific parsing is needed on the JS side, and it also closes
+    // off the XSS route a naive {{ item.id }} inside <script> would open if
+    // the field ever contained attacker-controlled content.
+    const ITEM_ID = {{ item.id | tojson }};
+
+    if (getToken()) {
+        document.getElementById("delete-btn").classList.remove("hidden");
+    }
+
+    document.getElementById("delete-btn").addEventListener("click", async function () {
+        if (!confirm("Delete this item? This cannot be undone.")) return;
+        const errorEl = document.getElementById("delete-error");
+        errorEl.textContent = "";
+
+        try {
+            const res = await fetch("/items/" + ITEM_ID, {
+                method: "DELETE",
+                headers: authHeaders(),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.detail || "Could not delete item";
+                return;
+            }
+            window.location.href = "/";
+        } catch (err) {
+            errorEl.textContent = "Network error. Please try again.";
+        }
+    });
+</script>
+{% endblock %}

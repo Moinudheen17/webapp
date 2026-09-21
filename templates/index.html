@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}All Items{% endblock %}
+{% block content %}
+<h1>All Items</h1>
+
+{% if items %}
+<div class="item-grid">
+    {% for item in items %}
+    <a class="item-card" href="/product/{{ item.id }}">
+        <h3>{{ item.name }}</h3>
+        <p class="price">${{ "%.2f"|format(item.price) }}</p>
+        {% if item.description %}
+        <p class="desc">
+            {{ item.description[:80] }}{% if item.description|length > 80 %}…{% endif %}
+        </p>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p>No items yet. <a href="/product/new">Add the first one</a>.</p>
+{% endif %}
+{% endblock %}

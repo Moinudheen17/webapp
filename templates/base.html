@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FastAPI Supabase App{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="brand">ItemStore</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/product/new" id="nav-new-item" class="hidden">New Item</a>
+            <a href="/login" id="nav-login">Login</a>
+            <a href="/register" id="nav-register">Register</a>
+            <a href="#" id="nav-logout" class="hidden">Logout</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // ---- Shared auth helpers, available to every page that extends
+        // this template. The JWT lives in localStorage only; it is never
+        // rendered into the page as literal HTML/JS to avoid XSS exposure
+        // beyond what localStorage access already implies.
+        function getToken() {
+            return localStorage.getItem("access_token");
+        }
+
+        function setToken(token) {
+            localStorage.setItem("access_token", token);
+        }
+
+        function clearToken() {
+            localStorage.removeItem("access_token");
+        }
+
+        function authHeaders() {
+            const token = getToken();
+            return token ? { "Authorization": "Bearer " + token } : {};
+        }
+
+        function updateNav() {
+            const loggedIn = !!getToken();
+            document.getElementById("nav-login").classList.toggle("hidden", loggedIn);
+            document.getElementById("nav-register").classList.toggle("hidden", loggedIn);
+            document.getElementById("nav-logout").classList.toggle("hidden", !loggedIn);
+            document.getElementById("nav-new-item").classList.toggle("hidden", !loggedIn);
+        }
+
+        document.getElementById("nav-logout").addEventListener("click", async function (e) {
+            e.preventDefault();
+            try {
+                await fetch("/auth/logout", { method: "POST", headers: authHeaders() });
+            } catch (err) {
+                // Network failure on logout shouldn't block the client-side
+                // token clear below.
+            }
+            clearToken();
+            window.location.href = "/";
+        });
+
+        updateNav();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
